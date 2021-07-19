@@ -134,3 +134,6 @@ echo ":set number" >> ~/.vimrc
 dnf install gnome-shell-extension-topicons-plus.noarch -y
 echo "Manualy install TopIcons Plus from page:"
 echo "https://extensions.gnome.org/extension/1031/topicons/"
+echo ""
+echo "Manually install Gnome extensions for vertical workspaces"
+echo "https://extensions.gnome.org/extension/4144/vertical-overview/"
