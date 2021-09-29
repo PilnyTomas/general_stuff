@@ -36,6 +36,25 @@ then
   done
 fi
 
+count=`ls -1 *.ino 2>/dev/null | wc -l`
+if [ $count != 0 ]
+then
+  for f in *.ino;
+  do
+    if test -f "${f}_backup"; then
+      echo "${f}_backup already exists - no action taken."
+    else
+      if [[ -L "${f}" ]]
+      then
+        echo "${f} is a symlink - no action taken."
+      else
+        cp $f "${f}_backup";
+        sed '/DEBUGLN/d' "${f}_backup" | sed '/DEBUGF/d'   | sed '/\/\/ debug/d' > "${f}";
+      fi
+    fi
+  done
+fi
+
 count=`ls -1 *.h 2>/dev/null | wc -l`
 if [ $count != 0 ]
 then
