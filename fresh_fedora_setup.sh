@@ -45,12 +45,10 @@ cp /usr/share/applications/guake.desktop /etc/xdg/autostart/
 
 # Sublime text 3
 echo "Sublime Text editor works without buying license, but your company might get in trouble"
-dnf config-manager --add-repo https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo
 INSTALL=0
 while true; do
     read -p "Do you wish to install this program? [y/n] " yn
     case $yn in
-#        [Yy]* ) dnf install sublime-text -y; INSTALL=1 break;;
         [Yy]* ) echo "installing"; INSTALL=1; break;;
         [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
@@ -58,12 +56,18 @@ while true; do
 done
 
 if [[ $INSTALL == 1 ]]; then
-	# Sublime addon: Package controll
-	echo "Manual install of Sublime-text package controll:"
-	echo "https://packagecontrol.io/installation"
-	# Sublime addon: SFTP
-	echo "Manual install of Sublime-text SFTP:"
-	echo "https://wbond.net/sublime_packages/sftp/installation"
+  rpm -v --import https://download.sublimetext.com/sublimehq-rpm-pub.gpg
+  dnf config-manager --add-repo https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo
+  dnf install sublime-text
+  #Update
+  #dnf and install Sublime Text
+
+  # Sublime addon: Package controll
+  echo "Manual install of Sublime-text package controll:"
+  echo "https://packagecontrol.io/installation"
+  # Sublime addon: SFTP
+  echo "Manual install of Sublime-text SFTP:"
+  echo "https://wbond.net/sublime_packages/sftp/installation"
 fi
 
 # M$ stuff
