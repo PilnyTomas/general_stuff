@@ -43,6 +43,23 @@ cp /usr/share/applications/guake.desktop /etc/xdg/autostart/
 # manual settings: color=#1ec503
 # Palette: right-most, top field
 
+# Arduino IDE + fix
+ARD_VERSION="1.8.19"
+wget https://downloads.arduino.cc/arduino-${ARD_VERSION}-linux64.tar.xz -P ~
+tar xvf ~/arduino-${ARD_VERSION}-linux64.tar.xz
+rm arduino-${ARD_VERSION}-linux64.tar.xz
+~/arduino-${ARD_VERSION}/install.sh
+rm -rf java # fix "no menu"
+            # see the issue:
+            # https://github.com/arduino/Arduino/issues/11150
+# Another fix may be needed
+#dnf install java-latest-openjdk # fix
+#printf "##########################################################"
+#printf "Pick the line that says \"java-latest\""
+#printf "##########################################################"
+#alternatives --config java
+
+
 # Sublime text 3
 echo "Sublime Text editor works without buying license, but your company might get in trouble"
 INSTALL=0
@@ -91,7 +108,7 @@ cd -
 
 # cmd-line app for YouTube download and conversion
 dnf install youtube-dl -y
-# Example: download vide
+# Example: download video
 #youtube-dl https://www.youtube.com/watch?v=k0kg80jAtI8
 # Example: download and convert to MP3
 #youtube-dl -x --audio-format mp3 https://www.youtube.com/watch?v=kRb41Joq-94&list=PL_MHjKxnHz1sm0YARyIdgev09N9A-3FEP
