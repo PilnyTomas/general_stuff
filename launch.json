@@ -1,0 +1,44 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+
+      "cwd": "${workspaceRoot}",
+
+      "executable": "${workspaceFolder}/build/blink.elf",
+
+      "name": "CORTEX-debug-foo-bar",
+
+      "request": "attach",
+
+      "type": "cortex-debug",
+
+      "servertype": "openocd",
+
+      "interface": "jtag",
+
+      "svdFile": "${workspaceRoot}/.vscode/esp32s3.base.svd",
+
+      "serverpath": "/home/pilnyt/.espressif/tools/openocd-esp32/v0.11.0-esp32-20220706/openocd-esp32/bin/openocd",
+
+      //"toolchainPath": "/home/pilnyt/.espressif/tools/xtensa-esp32s3-elf/esp-2022r1-RC1-11.2.0/xtensa-esp32-elf/bin",
+
+      "toolchainPrefix":"xtensa-esp32-elf",
+
+      "configFiles": [
+
+          "/home/pilnyt/.espressif/tools/openocd-esp32/v0.11.0-esp32-20211220/openocd-esp32/share/openocd/scripts/board/esp32-wrover-kit-3.3v.cfg"
+
+      ],
+
+      "openOCDPreConfigLaunchCommands":[
+
+          "set ESP_RTOS none"
+
+      ],
+
+      "runToEntryPoint": "app_main",
+
+    }
+  ]
+}
