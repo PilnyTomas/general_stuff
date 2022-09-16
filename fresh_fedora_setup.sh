@@ -158,3 +158,14 @@ echo "https://extensions.gnome.org/extension/1031/topicons/"
 echo ""
 echo "Manually install Gnome extensions for vertical workspaces"
 echo "https://extensions.gnome.org/extension/4144/vertical-overview/"
+
+# Add cdl function - shortcut for cd;ll
+echo "" >> ~/.bashrc
+echo "# Calling \"cdl <folder_name>\" is equal to \"cd <folder_name>; ll\"" >> ~/.bashrc
+echo "function cdl() {" >> ~/.bashrc
+echo "#  echo \"cd \\\"\$1\\\"; ll\"" >> ~/.bashrc
+echo "  cd \"\$1\"" >> ~/.bashrc
+echo "  ll" >> ~/.bashrc
+echo "}" >> ~/.bashrc
+
+source ~/.bashrc
