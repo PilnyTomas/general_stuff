@@ -6,6 +6,7 @@ then
   . ~/ex
 fi
 
+BACKTRACE=""
 ELF_FILE=$(find "$HOME/Arduino_builds/" -name "*.elf")
 SUBL=false
 
@@ -31,8 +32,13 @@ while getopts ":b:e:s" opt; do
 done
 shift $((OPTIND-1))
 
-echo "using ELF_FILE $ELF_FILE"
-echo "using backtrace $BACKTRACE"
+echo " * Using ELF_FILE \"$ELF_FILE\""
+echo " * Using BACKTRACE \"$BACKTRACE\""
+
+if [ -z "$BACKTRACE" -o -z "$ELF_FILE" ]; then
+  echo "Invalid input! Terminating."
+  exit
+fi
 
 xtensa-esp32-elf-addr2line -piaf -e $ELF_FILE $BACKTRACE
 
