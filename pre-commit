@@ -1,0 +1,142 @@
+#!/bin/bash
+echo -e "Running pre-commit hook: check secrets; compile staged sketches.\n"
+# Variable to track if the hook should fail
+changes_made=false
+test_failed=false
+sketches=() # An array of sketches which failed compilation and will be printed as "need fix"
+report=() # Create an empty array to store the report
+
+declare -a fqbn_list=(
+  "esp32:esp32:esp32"          # ESP32 development board"
+  #"esp32:esp32:esp32:esp32:esp32wrover"   # ESP32 development board with PSRAM module"
+  #"esp32:esp32:esp32:esp32:pico32" # ESP32 development board in a compact form factor"
+  "esp32:esp32:esp32s2"        # ESP32-S2 development board"
+  "esp32:esp32:esp32c3"        # ESP32-C3 development board"
+  "esp32:esp32:esp32s3"        # ESP32-S3 development board"
+)
+
+# Define color escape sequences
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+D_GRAY='\033[90m'
+L_GRAY='\033[37m'
+
+RED_BG='\033[41m'
+GREEN_BG='\033[42m'
+
+RESET='\033[0m'
+
+##
+# setup:
+# check brew: brew; ; echo $?
+# check arduino cli: arduino-cli version; echo $?
+# check arduino 3rd party: arduino-cli core install esp32:esp32
+# change fork to
+# ln -s $(pwd) ~/.arduino15/packages/esp32/hardware/esp32/2.0.10
+#
+
+########################################################################################################
+# Secrets test
+# Path to the secrets
+echo "Running check secrets test..."
+
+SECRETS="/home/pilnyt/Arduino/secrets.h"
+
+# Secret value to replace with
+SAMPLE_SECRET="*****"
+
+if [ ! -f "$SECRETS" ]; then
+  echo "File secrets.h does not exist at the given path \"$SECRETS\""
+  exit 1
+fi
+
+# Read the secrets file and extract secrets
+secrets=($(grep -oP '"[^"]+"' "$SECRETS" | tr -d '"'))
+
+#echo "Extracted secrets: ${secrets[*]}"
+
+# Iterate over the staged files
+while IFS= read -r -d '' file; do
+  #echo "Staged contents of $file:"
+  for secret in ${secrets[@]}; do
+    #echo "Check for secret $secret"
+    if git show :"$file" | grep -q "$secret"; then
+      sed -i "s/$secret/$SAMPLE_SECRET/g" "$file"
+      #echo "Replaced $secret value in $file"
+      changes_made=true
+    fi
+  done
+done < <(git diff --cached --name-only -z)
+
+# Check if any changes were made and exit accordingly
+if [ "$changes_made" = true ]; then
+  echo -e "${RED_BG}${L_GRAY}Test failed: Changes were made${RESET}"
+  echo "Run \"git diff\" to see the automatic changes if they are ok, continue by adding the changed file \"git add <changed_file>\" and finish by repeating the commit."
+else
+  echo -e "${GREEN_BG}${D_GRAY}Test secrets passed${RESET}"
+fi
+echo ""
+
+########################################################################################################
+# Compilation tests
+
+while IFS= read -r -d '' sketch; do
+  if [[ "$sketch" == *.ino ]]; then
+    echo "  > Compiling sketch: $sketch"
+    failed_fqbn=()
+    for fqbn in "${fqbn_list[@]}"; do
+      # Get the directory of the sketch
+      sketch_dir=$(dirname "$sketch")
+      # Check if there is a hidden file matching the FQBN in the sketch directory
+      skip_file="${sketch_dir}/.skip.${fqbn##*:}"
+      if [[ -f "$skip_file" ]]; then
+        echo "    > Skipping FQBN: $fqbn"
+        continue
+      fi
+
+      echo "    > FQBN: $fqbn"
+      #echo "arduino-cli compile --fqbn $fqbn $sketch 2>&1"
+      # Compile the sketch using arduino-cli
+      output=$(arduino-cli compile --fqbn "$fqbn" "$sketch" --verbose)
+      #output=$(arduino-cli compile --fqbn "$fqbn" "$sketch")
+      echo "$output" >> pre-commit-compilation.log
+      if [[ $? -ne 0 ]]; then
+        test_failed=true
+        sketches+=("$sketch")
+        echo -e "${RED_BG}${L_GRAY}      > Failed to compile: $sketch${RESET}"
+        test_failed=true
+        failed_fqbn+=$fqbn
+      else
+        echo  -e "${GREEN_BG}${D_GRAY}      > Compilation successful: $sketch${RESET}"
+      fi
+    done # loop over all FQBNs
+  if [ ${#failed_fqbn[@]} -eq 0 ]; then
+      report+=("${RED_BG}${L_GRAY}Failed to compile: $sketch${RESET} for FQBNs ${failed_fqbn[@]}")
+    else
+      report+=("${GREEN_BG}${D_GRAY}Compilation successful: $sketch${RESET}")
+    fi
+  fi
+done < <(git diff --cached --name-only -z)
+
+if [[ ${#sketches[@]} -eq 0 ]]; then
+  echo -e "${GREEN_BG}${D_GRAY}All sketches compiled - test passed${RESET}"
+else
+  echo -e  "${RED_BG}${L_GRAY}The array has elements.${RESET}\nFix following sketches:"
+  for sketch in ${sketches[@]}; do
+    echo "$sketch"
+  done
+fi
+
+########################################################################################################
+# TODO
+# Compile example in changed library
+# (TODO avoid compiling the same example twice - for example when both the lib and example were modified)
+########################################################################################################
+# Final check and reports
+
+if [[ ! $changes_made || ! $test_failed ]]; then
+  echo "Test succeeded: No changes were made and tests succeeded"
+  exit 0 # normal return
+else
+  exit 1
+fi
