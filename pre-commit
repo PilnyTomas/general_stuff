@@ -1,5 +1,39 @@
 #!/bin/bash
-echo -e "Running pre-commit hook: check secrets; compile staged sketches.\n"
+# TODO integrate https://github.com/espressif/conventional-precommit-linter
+# TODO compile examples when lib src changed
+#      > make sure that examples which also were changed are not compiled twice
+# TODO on subsequent commit attempt (when hook failed) compile only failed items
+# TODO add C6 and H2 to FQBN list when ready
+# TODO implement checks for tools (arduino-cli / brew)
+
+###################
+# Note - this hook uses arduino-cli. If you don't have it installed
+# setup:
+# check brew: brew; echo $?
+# check arduino cli: arduino-cli version; echo $?
+# check arduino 3rd party: arduino-cli core install esp32:esp32
+# change fork to
+# ln -s $(pwd) ~/.arduino15/packages/esp32/hardware/esp32/2.0.9
+
+# This enables you to skip the hook (will be considered success) especially while this
+#    hook is in development and not all the heuristics are implemented.
+#    For example when you add a ton of examples, most of them compile successfully, but only few fail
+#    after you fix them this hook would (as it is implemented now) compile all of the examples.
+read -p "Do you want to run pre-commit hook? (N=pass) [Y/N]: " choice
+case $choice in
+    [Yy]* )
+        # Add your code for 'yes' option here
+        echo -e "Running pre-commit hook: check secrets; compile staged sketches.\n"
+        break;;
+    [Nn]* )
+        # Add your code for 'no' option here
+        echo -e "Skipping pre-commit hook. This evaluated as passed."
+        exit 0;
+        break;;
+    * )
+        echo "Invalid input. Please enter 'y' or 'n'.";;
+esac
+
 # Variable to track if the hook should fail
 changes_made=false
 test_failed=false
@@ -13,6 +47,7 @@ declare -a fqbn_list=(
   "esp32:esp32:esp32s2"        # ESP32-S2 development board"
   "esp32:esp32:esp32c3"        # ESP32-C3 development board"
   "esp32:esp32:esp32s3"        # ESP32-S3 development board"
+  # TODO add C6 and H2 when ready
 )
 
 # Define color escape sequences
@@ -25,15 +60,6 @@ RED_BG='\033[41m'
 GREEN_BG='\033[42m'
 
 RESET='\033[0m'
-
-##
-# setup:
-# check brew: brew; ; echo $?
-# check arduino cli: arduino-cli version; echo $?
-# check arduino 3rd party: arduino-cli core install esp32:esp32
-# change fork to
-# ln -s $(pwd) ~/.arduino15/packages/esp32/hardware/esp32/2.0.10
-#
 
 ########################################################################################################
 # Secrets test
@@ -61,8 +87,9 @@ while IFS= read -r -d '' file; do
   for secret in ${secrets[@]}; do
     #echo "Check for secret $secret"
     if git show :"$file" | grep -q "$secret"; then
-      sed -i "s/$secret/$SAMPLE_SECRET/g" "$file"
-      #echo "Replaced $secret value in $file"
+      sed -i "s/$secret/$SAMPLE_SECRET/g" "$file${RESET}"
+      echo "${RED_BG}${L_GRAY}Replaced a secret in $file"
+      #echo "${RED_BG}${L_GRAY}Replaced $secret value in $file${RESET}"
       changes_made=true
     fi
   done
@@ -129,14 +156,15 @@ fi
 
 ########################################################################################################
 # TODO
-# Compile example in changed library
+# Compile examples in changed library
 # (TODO avoid compiling the same example twice - for example when both the lib and example were modified)
 ########################################################################################################
 # Final check and reports
 
-if [[ ! $changes_made || ! $test_failed ]]; then
-  echo "Test succeeded: No changes were made and tests succeeded"
-  exit 0 # normal return
-else
+if [[ "$changes_made" = true || "$test_failed" = true ]]; then
+  echo "${RED_BG}${L_GRAY}Test failed - nothing was committed: Fix problems and commit again.${RESET}"
   exit 1
+else
+  echo "${GREEN_BG}${D_GRAY}Test succeeded: No changes were made and tests succeeded${RESET}"
+  exit 0 # normal return
 fi
