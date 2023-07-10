@@ -1,8 +1,5 @@
 #!/bin/bash
 # TODO integrate https://github.com/espressif/conventional-precommit-linter
-# TODO compile examples when lib src changed
-#      > make sure that examples which also were changed are not compiled twice
-# TODO on subsequent commit attempt (when hook failed) compile only failed items
 # TODO add C6 and H2 to FQBN list when ready
 # TODO implement checks for tools (arduino-cli / brew)
 
@@ -20,7 +17,6 @@ skip_example_after_single_fail=false
 
 # Terminate all compilation checks after first fail - by default compiles everything (default value false)
 fast_fail=false
-
 
 # This enables you to skip the hook (will be considered success) especially while this
 #    hook is in development and not all the heuristics are implemented.
@@ -212,7 +208,7 @@ for sketch in "${sketches_to_compile[@]}"; do
       echo "$output" >> pre-commit-compilation.log
       #echo "arduino-cli returned with result $result"
       if [[ result -ne 0 ]]; then
-        echo -e "${RED_BG}${L_GRAY}    > Failed to compile: $sketch${RESET}"
+        echo -e "${RED_BG}${L_GRAY}    > Failed to compile: \"$sketch\" for FQBN \"$fqbn\"${RESET}"
         test_failed=true
         failed_sketches+=("$sketch")
         test_failed=true
@@ -234,7 +230,7 @@ for sketch in "${sketches_to_compile[@]}"; do
     done # loop over all FQBNs
     #if (( ${#failed_fqbn[@]} )); then
     if [ -n "$failed_fqbn" ]; then
-      report+=("${RED_BG}${L_GRAY}Failed to compile: $sketch${RESET} for FQBNs/n${failed_fqbn[@]}")
+      report+=("${RED_BG}${L_GRAY}Failed to compile: $sketch${RESET} for FQBNs\n${failed_fqbn[@]}")
     else # if [ ${#failed_fqbn[@]} -eq 0 ]
       report+=("${GREEN_BG}${D_GRAY}Compilation successful: $sketch${RESET}")
     fi # if [ ${#failed_fqbn[@]} -eq 0 ]
