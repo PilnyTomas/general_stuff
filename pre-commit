@@ -15,6 +15,13 @@
 # change fork to
 # ln -s $(pwd) ~/.arduino15/packages/esp32/hardware/esp32/2.0.9
 
+# Terminate compilation check for a particular sketch after first fail - rest of the examples will be still compiled (default is false)
+skip_example_after_single_fail=false
+
+# Terminate all compilation checks after first fail - by default compiles everything (default value false)
+fast_fail=false
+
+
 # This enables you to skip the hook (will be considered success) especially while this
 #    hook is in development and not all the heuristics are implemented.
 #    For example when you add a ton of examples, most of them compile successfully, but only few fail
@@ -30,6 +37,10 @@
 #    * ) echo "Invalid input. Please enter 'y' or 'n'.";;
 #  esac
 #done
+
+
+########################################################################################################
+# Hook variables and constants
 
 # Variable to track if the hook should fail
 changes_made=false
@@ -120,8 +131,8 @@ if [ "$changes_made" = true ]; then
 else
   echo -e "${GREEN_BG}${D_GRAY}Test secrets passed${RESET}"
 fi
-echo ""
 
+echo ""
 ########################################################################################################
 # Search for modified libraries (in libraries/) and schedule all example for those libraries to be compiled
 echo "### Search for modified libraries (in libraries/) and schedule all example for those libraries to be compiled"
@@ -133,75 +144,38 @@ libraries=() # List of libraries already searched and scheduled for compilation
 myArr=("foo" "bar" "baz")
 
 while IFS= read -r -d '' sketch; do
-  echo "Debug:$sketch if [[ "\$sketch" == libraries/* && ! "\$sketch" == *examples* ]]; then"
   if [[ "$sketch" == libraries/* && ! "$sketch" == *examples* ]]; then
     library_path=$(dirname "$(dirname "$sketch")")
     library_name=$(basename "$library_path")
     examples_folder="$library_path/examples"
-    #echo "Debug: library_path=$library_path; library_name=$library_name; examples_folder=$examples_folder"
-    if isPresent "${libraries[@]}" $library_name; then
-      echo "$library_name Already scheduled for compilation." # debug
-    else
+    if ! isPresent "${libraries[@]}" $library_name; then
       echo "Adding $library_name for compilation."
       libraries+=("$library_name")
-
-#      if [[ -d "$examples_folder" ]]; then
-#        for examples
-#          echo "Adding example $example for compilation."
-#          sketch=
-#          sketches_to_compile+=$sketch
-#        done
-#      else # if [[ -d "$examples_folder" ]]
-#        echo -e "${RED}Examples folder not found for library: $library_name${RESET}"
-#      fi # if [[ -d "$examples_folder" ]]
-
       if [[ -d "$examples_folder" ]]; then
-      while IFS= read -r -d '' example; do
-        if [[ "$example" == *.ino ]]; then
-          echo "Scheduling for compilation: $example"
-          sketches_to_compile+=("$example")
-        fi
-      done < <(find "$examples_folder" -type f -name '*.ino' -print0)
-    else
-      echo -e "${RED}Examples folder not found for library: $library_name${RESET}"
-    fi
-
+        while IFS= read -r -d '' example; do
+          if [[ "$example" == *.ino ]]; then
+            echo "Scheduling for compilation: $example"
+            sketches_to_compile+=("$example")
+          fi
+        done < <(find "$examples_folder" -type f -name '*.ino' -print0)
+      else
+        echo -e "${RED}Examples folder not found for library: $library_name${RESET}"
+      fi # if [[ -d "$examples_folder" ]]
+    else # if ! isPresent "${libraries[@]}" $library_name
+      echo "Library already scheduled for compilation: $library_name" # debug
     fi # if isPresent "${libraries[@]}" $library_name
   fi # if [[ "$sketch" == libraries/* ]]
 done < <(git diff --cached --name-only -z)
 
-#if [[ ${#sketches_to_compile[@]} -eq 0 ]]; then
-#  echo "No examples to compile."
-#else
-#  echo "Compiling examples:"
-#  for example_path in "${sketches_to_compile[@]}"; do
-#    library_name=$(basename "$(dirname "$example_path")")
-#    echo -e "  > Library: $library_name"
-#
-#    # Compile each example in the examples folder
-#    for example in "$example_path"/*; do
-#      echo "    > Example: $example"
-#      output=$(arduino-cli compile --verbose "$example" 2>&1)
-#
-#      if [[ $? -ne 0 ]]; then
-#        sketches+=("$example")
-#        echo -e "      ${RED}Failed to compile: $example${RESET}"
-#      else
-#        echo -e "      ${GREEN}Compilation successful: $example${RESET}"
-#      fi
-#    done
-#  done
-#fi
-
+echo ""
 ########################################################################################################
 # Add modified sketched to compilation array (if not already scheduled)
 echo "### Add modified sketched to compilation array (if not already scheduled)"
 
 while IFS= read -r -d '' sketch; do
-  echo "Debug: Checking file: \"$sketch\""
+  #echo "Debug: Checking file: \"$sketch\"" # debug
   if [[ "$sketch" == *.ino ]]; then
-    echo "Debug: Yeah, its a sketch"
-    if isPresent "${sketches_to_compile[@]}" $sketch; then
+    if isPresent "${sketches_to_compile[@]}" "$sketch"; then
       echo "Already scheduled for compilation: $sketch" # debug
     else
       echo "Scheduling for compilation: $sketch"
@@ -210,53 +184,11 @@ while IFS= read -r -d '' sketch; do
   fi # if [[ "$sketch" == *.ino ]]
 done < <(git diff --cached --name-only -z)
 
-#    failed_fqbn=()
-#    for fqbn in "${fqbn_list[@]}"; do
-#      # Get the directory of the sketch
-#      sketch_dir=$(dirname "$sketch")
-#      # Check if there is a hidden file matching the FQBN in the sketch directory
-#      skip_file="${sketch_dir}/.skip.${fqbn##*:}"
-#      if [[ -f "$skip_file" ]]; then
-#        echo "    > Skipping FQBN: $fqbn"
-#        continue
-#      fi
-#
-#      echo "    > FQBN: $fqbn"
-#      #echo "arduino-cli compile --fqbn $fqbn $sketch 2>&1"
-#      # Compile the sketch using arduino-cli
-#      output=$(arduino-cli compile --fqbn "$fqbn" "$sketch" --verbose)
-#      #output=$(arduino-cli compile --fqbn "$fqbn" "$sketch")
-#      echo "$output" >> pre-commit-compilation.log
-#      if [[ $? -ne 0 ]]; then
-#        test_failed=true
-#        failed_sketches+=("$sketch")
-#        echo -e "${RED_BG}${L_GRAY}      > Failed to compile: $sketch${RESET}"
-#        test_failed=true
-#        failed_fqbn+=$fqbn
-#      else # if [[ $? -ne 0 ]]
-#        echo  -e "${GREEN_BG}${D_GRAY}      > Compilation successful: $sketch${RESET}"
-#      fi # if [[ $? -ne 0 ]]
-#    done # loop over all FQBNs
-#    if [ ${#failed_fqbn[@]} -eq 0 ]; then
-#      report+=("${RED_BG}${L_GRAY}Failed to compile: $sketch${RESET} for FQBNs ${failed_fqbn[@]}")
-#    else # if [ ${#failed_fqbn[@]} -eq 0 ]
-#      report+=("${GREEN_BG}${D_GRAY}Compilation successful: $sketch${RESET}")
-#    fi # if [ ${#failed_fqbn[@]} -eq 0 ]
-#  fi # if [[ "$sketch" == *.ino ]]
-#done < <(git diff --cached --name-only -z)
-
-#if [[ ${#failed_sketches[@]} -eq 0 ]]; then
-#  echo -e "${GREEN_BG}${D_GRAY}All failed_sketches compiled - test passed${RESET}"
-#else
-#  echo -e  "${RED_BG}${L_GRAY}Compilation test failed:${RESET}"
-#  for sketch in ${failed_sketches[@]}; do
-#    echo "$sketch"
-#  done
-#fi
-
+echo ""
 ########################################################################################################
 # Compile scheduled examples
 echo "### Compile scheduled sketches"
+#echo "Debug: sketches_to_compile: ${sketches_to_compile[@]}" # debug
 
 for sketch in "${sketches_to_compile[@]}"; do
     echo "> Compiling sketch: \"$sketch\""
@@ -267,7 +199,7 @@ for sketch in "${sketches_to_compile[@]}"; do
       # Check if there is a hidden file matching the FQBN in the sketch directory
       skip_file="${sketch_dir}/.skip.${fqbn##*:}"
       if [[ -f "$skip_file" ]]; then
-        echo "  > Skipping FQBN: $fqbn"
+        echo "    > Skipping FQBN: $fqbn"
         continue
       fi
 
@@ -280,29 +212,47 @@ for sketch in "${sketches_to_compile[@]}"; do
       echo "$output" >> pre-commit-compilation.log
       #echo "arduino-cli returned with result $result"
       if [[ result -ne 0 ]]; then
-        test_failed=true
-        failed_sketches+=("$sketch")
         echo -e "${RED_BG}${L_GRAY}    > Failed to compile: $sketch${RESET}"
         test_failed=true
-        failed_fqbn+=("$fqbn")
+        failed_sketches+=("$sketch")
+        test_failed=true
+        failed_fqbn+=("  > $fqbn")
+
+        if [ "$fast_fail" = true ]; then
+          echo -e "> Terminating all compilation tests"
+          break 2 # Break from both loops
+        fi
+        if [ "$skip_example_after_single_fail" = true ]; then
+          echo -e "> Terminating compilations for sketch $sketch"
+          break 1 # Skip all FQBNs for this sketch
+        fi
       else # if [[ $? -ne 0 ]]
         echo  -e "${GREEN_BG}${D_GRAY}    > Compilation successful: $sketch${RESET}"
         # TODO save successful test to skip them next time (maybe not)
       fi # if [[ $? -ne 0 ]]
+
     done # loop over all FQBNs
-    if [ ${#failed_fqbn[@]} -eq 0 ]; then
-      report+=("${RED_BG}${L_GRAY}Failed to compile: $sketch${RESET} for FQBNs ${failed_fqbn[@]}")
+    #if (( ${#failed_fqbn[@]} )); then
+    if [ -n "$failed_fqbn" ]; then
+      report+=("${RED_BG}${L_GRAY}Failed to compile: $sketch${RESET} for FQBNs/n${failed_fqbn[@]}")
     else # if [ ${#failed_fqbn[@]} -eq 0 ]
       report+=("${GREEN_BG}${D_GRAY}Compilation successful: $sketch${RESET}")
     fi # if [ ${#failed_fqbn[@]} -eq 0 ]
 done # for sketch in "${sketches_to_compile[@]}"
+
+echo ""
 ########################################################################################################
-# Final check and reports
+echo "### Final check and reports"
+
+for r in "${report[@]}"; do
+  echo -e "$r"
+done
 
 if [[ "$changes_made" = true || "$test_failed" = true ]]; then
   echo -e "${RED_BG}${L_GRAY}Test failed - nothing was committed: Fix problems and commit again.${RESET}"
   exit 1
 else
   echo -e "${GREEN_BG}${D_GRAY}Test succeeded: No changes were made and tests succeeded${RESET}"
-  exit 0 # normal return
+  #exit 0 # normal return
+  exit 1 # normal return
 fi
