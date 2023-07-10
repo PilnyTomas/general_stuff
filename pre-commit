@@ -249,6 +249,6 @@ if [[ "$changes_made" = true || "$test_failed" = true ]]; then
   exit 1
 else
   echo -e "${GREEN_BG}${D_GRAY}Test succeeded: No changes were made and tests succeeded${RESET}"
-  #exit 0 # normal return
-  exit 1 # normal return
+  exit 0 # normal return
+  #exit 1 # debug return - always fail
 fi
