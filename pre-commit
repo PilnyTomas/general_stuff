@@ -24,6 +24,7 @@ fast_fail=false
 #    after you fix them this hook would (as it is implemented now) compile all of the examples.
 
 # This for some reason stopped working for me - it is reading empty string ("") and it gets stuck in infinite loop
+#exec < /dev/tty
 #while true; do
 #  read -n 1 -p "Do you want to run pre-commit hook? (N=pass) [Y/N]: " choice
 #  echo "Debug: response=\"$choice\""
