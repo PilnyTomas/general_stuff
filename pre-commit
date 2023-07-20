@@ -23,17 +23,16 @@ fast_fail=false
 #    For example when you add a ton of examples, most of them compile successfully, but only few fail
 #    after you fix them this hook would (as it is implemented now) compile all of the examples.
 
-# This for some reason stopped working for me - it is reading empty string ("") and it gets stuck in infinite loop
-#exec < /dev/tty
-#while true; do
-#  read -n 1 -p "Do you want to run pre-commit hook? (N=pass) [Y/N]: " choice
-#  echo "Debug: response=\"$choice\""
-#  case $choice in
-#    [Yy]* ) echo "Running pre-commit hook: check secrets; compile staged failed_sketches.\n"; break;;
-#    [Nn]* ) echo "Skipping pre-commit hook. This evaluated as passed."; exit 0;;
-#    * ) echo "Invalid input. Please enter 'y' or 'n'.";;
-#  esac
-#done
+exec < /dev/tty
+while true; do
+ read -n 1 -p "Do you want to run pre-commit hook? (N=pass) [Y/N]: " choice
+ echo "Debug: response=\"$choice\""
+ case $choice in
+   [Yy]* ) echo "Running pre-commit hook: check secrets; compile staged failed_sketches.\n"; break;;
+   [Nn]* ) echo "Skipping pre-commit hook. This evaluated as passed."; exit 0;;
+   * ) echo "Invalid input. Please enter 'y' or 'n'.";;
+ esac
+done
 
 
 ########################################################################################################
