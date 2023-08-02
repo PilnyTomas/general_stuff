@@ -26,7 +26,7 @@ fast_fail=false
 exec < /dev/tty
 while true; do
  read -n 1 -p "Do you want to run pre-commit hook? (N=pass) [Y/N]: " choice
- echo "Debug: response=\"$choice\""
+ echo -e "\nDebug: response=\"$choice\""
  case $choice in
    [Yy]* ) echo "Running pre-commit hook: check secrets; compile staged failed_sketches.\n"; break;;
    [Nn]* ) echo "Skipping pre-commit hook. This evaluated as passed."; exit 0;;
@@ -249,6 +249,6 @@ if [[ "$changes_made" = true || "$test_failed" = true ]]; then
   exit 1
 else
   echo -e "${GREEN_BG}${D_GRAY}Test succeeded: No changes were made and tests succeeded${RESET}"
-  exit 0 # normal return
   #exit 1 # debug return - always fail
+  exit 0 # normal return
 fi
