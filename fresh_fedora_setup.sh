@@ -99,6 +99,10 @@ dnf localinstall teams-1.2.00.32451-1.x86_64.rpm -y
 gconftool-2 --set /apps/metacity/general/focus_new_windows --type string strict
 # read more here:
 # http://bertrandbenoit.blogspot.com/2011/09/change-window-behavior-to-prevent-focus.html
+#
+# Manual GMONE plugins
+# https://extensions.gnome.org/extension/1414/unblank/
+# https://extensions.gnome.org/extension/3933/toggle-night-light/
 
 # Bitcoin Markets tray addon / widget
 git clone https://github.com/OttoAllmendinger/gnome-shell-bitcoin-markets.git
@@ -106,7 +110,7 @@ cd gnome-shell-bitcoin-markets
 make install
 cd -
 
-# cmd-line app for YouTube download and conversion
+# cmd-line app for YouTube (YT) download and conversion
 dnf install youtube-dl -y
 # Example: download video
 #youtube-dl https://www.youtube.com/watch?v=k0kg80jAtI8
@@ -131,6 +135,8 @@ git config --global diff.tool vimdiff     # setup vimdiff for git diff tool
 git config --global merge.tool vimdiff    # setup vimdiff for git merge tool
 git config --global difftool.prompt false # stop asking every time if I really want to use vimdiff - fuck yeah I do!
 git config --global alias.d difftool      # shortcut: git diff > git d
+git config --global alias.r restore
+# TODO alias with parameter (not from user) example git c == git commit -m
 
 # stop asking git for username and Password
 # prerequisite - generate SSH key on computer and load it in web account
@@ -168,4 +174,26 @@ echo "  cd \"\$1\"" >> ~/.bashrc
 echo "  ll" >> ~/.bashrc
 echo "}" >> ~/.bashrc
 
+source ~/.bashrc
+
+#### Manualy put to .bashrc
+# subl ~/.bashrc
+
+# # Set up aliases
+# alias flash="my_flash"
+# alias fl="flash"
+# alias f="flash"
+
+# alias terminal="my_terminal"
+# alias term="terminal"
+# alias t="terminal"
+# alias serial="terminal"
+# alias ser="terminal"
+# alias s="terminal"
+
+# alias flt="my_flt"
+# alias ft="flt"
+
+# #alias all="make && flash && terminal"
+# alias all="make -j EXTRAFLAGS+=\"-DESP32_IGNORE_CHIP_REVISION_CHECK\" && flash && terminal"
 source ~/.bashrc

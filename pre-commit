@@ -67,10 +67,10 @@ RESET='\033[0m'
 
 ########################################################################################################
 ##
-## @brief      Determines if a string is present in an Array.
+## @brief       Determines if a string is present in an Array.
 ## @description Used to avoid duplicate compilation of examples and duplicate library search
-##              (only single file in lib is enough to trigger compile all examples)
-## @return     True if present, False otherwise.
+##                (only single file in lib is enough to trigger compile all examples)
+## @return      True if present, False otherwise.
 ##
 isPresent() {
   local arr=("$@")

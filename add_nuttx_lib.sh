@@ -84,58 +84,123 @@ drivers=$(find '.' -name "*$driver*")
 filtered=$(echo "$drivers" | grep -v "Documents" | grep -v ".git")
 file_list=$(echo "$filtered" | grep "/$existing_chip/")
 
-for file in $file_list; do
-  [[ $verbose == true ]] && echo -e "\nProcessing file: $file"
-  if [ -d "$file" ]; then
-    [[ $verbose == true ]] && echo "Skipping directory: $file"
-    continue
-  fi
+# for file in $file_list; do
+#   [[ $verbose == true ]] && echo -e "\nProcessing file: $file"
+#   if [ -d "$file" ]; then
+#     [[ $verbose == true ]] && echo "Skipping directory: $file"
+#     continue
+#   fi
 
-  new_file=$(echo "$file" | sed "s/$existing_chip/$new_chip/g")
-  [[ $verbose == true ]] && echo "New file path: $new_file"
-  # If the new directory doesn't exist
-  new_dir=$(dirname "$new_file")
-  if [[ ! -d $new_dir ]]; then
-    echo "Target directory $new_dir not found!"
+#   new_file=$(echo "$file" | sed "s/$existing_chip/$new_chip/g")
+#   [[ $verbose == true ]] && echo "New file path: $new_file"
+#   # If the new directory doesn't exist
+#   new_dir=$(dirname "$new_file")
+#   if [[ ! -d $new_dir ]]; then
+#     echo "Target directory $new_dir not found!"
 
-    # Provide hints on similar folders
-    base_dir=$(dirname "$new_dir")
-    if [[ -d $base_dir ]]; then
-      similar_dir=$(find "$base_dir" -maxdepth 1 -type d | grep -v "$base_dir$")
-      echo "Here are some suggestions from $base_dir:"
-      echo "$similar_dir"
-      echo "Please provide the correct directory (or press Enter to skip):"
-      read -r user_dir
+#     # Provide hints on similar folders
+#     base_dir=$(dirname "$new_dir")
+#     if [[ -d $base_dir ]]; then
+#       similar_dir=$(find "$base_dir" -maxdepth 1 -type d | grep -v "$base_dir$")
+#       echo "Here are some suggestions from $base_dir:"
+#       echo "$similar_dir"
+#       echo "Please provide the correct directory (or press Enter to skip):"
+#       read -r user_dir
 
-      # If user provides a new directory, use that. Otherwise, continue with the loop.
-      if [[ ! -z $user_dir ]]; then
-        new_dir=$user_dir
-        new_file="$new_dir/$(basename $new_file)"
-      else
-        continue
-      fi
-    else
-      continue
+#       # If user provides a new directory, use that. Otherwise, continue with the loop.
+#       if [[ ! -z $user_dir ]]; then
+#         new_dir=$user_dir
+#         new_file="$new_dir/$(basename $new_file)"
+#       else
+#         continue
+#       fi
+#     else
+#       continue
+#     fi
+#   fi
+
+#   cp "$file" "$new_file"
+#   #sed -i "s/$existing_chip/$new_chip/g" "$new_file"
+#   # Check if the file contains any of the ignore strings
+#   if file_contains_ignore_string "$file"; then
+#       detailed_search_and_modify "$file" "$new_file"
+#   else
+#       cp "$file" "$new_file"
+#       sed -i "s/$existing_chip/$new_chip/g" "$new_file"
+#   fi
+#   [[ $verbose == true ]] && echo "Copied and modified $file to $new_file"
+
+#   if [ "$show_diff" == true ]; then
+#     $editor $file $new_file
+#   fi
+
+#   if $add_to_git; then
+#     git add "$new_file"
+#   fi
+
+# done
+
+
+# Modify existing files:
+
+# Modifying the "$new_chip/Make.defs" file
+
+temp_file="temp_makefile"
+# Ensure temporary file is empty
+> $temp_file
+
+make_defs_file=$(find . -type f -name "Make.defs" | grep "$new_chip/Make.defs")
+[[ $verbose == true ]] && echo -e "\nProcessing file: $make_defs_file"
+cp $make_defs_file $make_defs_file.backup
+
+if [[ -n $make_defs_file ]]; then
+    new_chip_capital=$(echo "$new_chip" | tr '[:lower:]' '[:upper:]')
+    driver_capital=$(echo "$driver" | tr '[:lower:]' '[:upper:]')
+    insertion_block="ifeq (\$(CONFIG_${new_chip_capital}_${driver_capital}),y)
+CHIP_CSRCS += ${new_chip}_${driver}.c
+endif
+"
+    [[ $verbose == true ]] && echo -e "add block:\n$insertion_block"
+
+    inserted=false
+
+    while IFS= read -r line; do
+         if [[ "$line" =~ ^[[:space:]]*#ifeq\ \(\$\(CONFIG_ ]]; then
+            [[ $verbose == true ]] && echo -e "Line: $line"
+            # Extract the key and check if our key should be inserted before it
+#            key=$(echo "$line" | sed -n 's/^[[:space:]]*#ifeq (\(\$\(CONFIG_\)\([^,]*\)\),y).*$/\2/p')
+            #key=$(echo "$line" | sed -n 's/^[[:blank:]]*#ifeq (\(\$\(CONFIG_\)\([^,]*\)\),y).*$/\3/p')
+            #key=$(grep -o -P '(?<=Here).*(?=string)')
+            before="#ifeq \(\$\(CONFIG_" # Match ifeq ($(CONFIG_
+            after="\),y\)" # Match ),y)
+            key=$(grep -o -P '(?<=$before).*(?=$after)')
+
+            [[ $verbose == true ]] && echo -e "Got key: $key"
+            if [[ "${new_chip_capital}_${driver_capital}" < "$key" && "$inserted" = false ]]; then
+                [[ $verbose == true ]] && echo -e "\nInserting block before line: $line"
+                echo "$insertion_block" >> "$temp_file"
+                inserted=true
+            fi
+        fi
+        echo "$line" >> "$temp_file"
+    done < "$make_defs_file"
+
+    # If by the end of the file the block hasn't been inserted, insert it at the end
+    if [[ "$inserted" = false ]]; then
+        echo "Shit's fucked!"
+        #echo "$insertion_block" >> "$temp_file"
     fi
-  fi
+else
+    #echo "Make.defs file not found for $new_chip"
+    echo "foo"
+fi
 
-  cp "$file" "$new_file"
-  #sed -i "s/$existing_chip/$new_chip/g" "$new_file"
-  # Check if the file contains any of the ignore strings
-  if file_contains_ignore_string "$file"; then
-      detailed_search_and_modify "$file" "$new_file"
-  else
-      cp "$file" "$new_file"
-      sed -i "s/$existing_chip/$new_chip/g" "$new_file"
-  fi
-  [[ $verbose == true ]] && echo "Copied and modified $file to $new_file"
+if [ "$show_diff" = true ]; then
+  $editor $make_defs_file.backup $make_defs_file
+fi
 
-  if [ "$show_diff" == true ]; then
-    $editor $file $new_file
-  fi
+if $add_to_git; then
+  git add "$make_defs_file"
+fi
 
-  if $add_to_git; then
-    git add "$new_file"
-  fi
-
-done
+rm $make_defs_file.backup

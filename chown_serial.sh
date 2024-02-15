@@ -1,0 +1,1 @@
+sudo chown pilnyt /dev/ttyUSB$1

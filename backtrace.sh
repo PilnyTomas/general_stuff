@@ -37,6 +37,8 @@ echo " * Using BACKTRACE \"$BACKTRACE\""
 
 if [ -z "$BACKTRACE" -o -z "$ELF_FILE" ]; then
   echo "Invalid input! Terminating."
+  echo "Usage example:"
+  echo "$0 -b \"Backtrace: 0x4008a5cd:0x3ffc6110 0x4008876a:0x3ffc6140 0x400d2475:0x3ffc6180 0x4008a415:0x3ffc61c0\""
   exit
 fi
 
