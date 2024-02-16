@@ -176,6 +176,7 @@ echo "}" >> ~/.bashrc
 
 source ~/.bashrc
 
+
 #### Manualy put to .bashrc
 # subl ~/.bashrc
 
@@ -197,3 +198,41 @@ source ~/.bashrc
 # #alias all="make && flash && terminal"
 # alias all="make -j EXTRAFLAGS+=\"-DESP32_IGNORE_CHIP_REVISION_CHECK\" && flash && terminal"
 source ~/.bashrc
+
+exit
+
+### Connect to shared folder from Windoze
+## In Windoze:
+# Right click on drive - properties - sharing - share - add name and description
+# in the properties - security - add - advanced - Everyone - ok - tick full controll and modify - OK (takes sime time)
+# note: it is better to use network path name instead of ip.
+# The network path name can be found in the sharing tab in properties
+# it will look something like:
+# \\DESKTOP-ABCDEGH\Shared_folder_name
+
+##In Fedora
+#https://tecadmin.net/mount-remote-windows-share-on-linux/
+
+nmblookup <Windoze IP> -A
+# this will print the Windoze machine network name
+# this is better to use instead of IP which can change in tame
+
+#create mount point - where you want the folder to be located:
+mkdir ~/Windoze_Multimedia
+# mount:
+sudo mount -t cifs //WINDOWS_NETWORK_NAME/SHARE_NAME ~/Windoze_Multimedia -o username=WINDOZE_USERNAME,password=WINDOZE_PASSWORD
+# but this is onetime and it will brake after turning off either of the computers (probably)
+sudo subl /etc/cifs-credentials
+# add the folowing - obviously type in your real windows username and password
+username=WINDOZE_USERNAME
+password=WINDOZE_PASSWORD
+# save and close the file and then:
+sudo chmod 600 /etc/cifs-credentials
+
+sudo subl /etc/fstab
+# add line
+//WINDOWS_NETWORK_NAME/SHARE_NAME /mnt/windows-share cifs credentials=/etc/cifs-credentials,uid=1000,gid=1000 0 0
+# test
+df -h
+# in case of problems
+sudo chown -R $USER:$USER ~/Windoze_Multimedia
