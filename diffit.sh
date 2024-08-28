@@ -29,9 +29,11 @@ IGNORE="':!*.o' ':!*.d' ':!*.cproject' ':!*proj*' ':!*.Identifier' ':!*identifie
 
 # Function to display help message
 display_help() {
-    echo "Usage: $(basename $0) -b bse_repo -c compare_repo [OPTIONS]"
+    echo "Usage: $(basename $0) -b base_repo -c compared_repo [OPTIONS]"
     echo "Compare repositories"
     echo
+    echo "  -b value      (Mandatory) Base repository"
+    echo "  -c value      Compare againts the base repository (if not suplied the script will perfrom tests for all folders)"
     echo "  -o            Print top-level overview of the changes - number of changed files and number of changed lines (if no other flag is specified this will be automatically set)"
     echo "  -f            Print list of changed files (cannot be combined with -n)"
     echo "  -n            Print list of new files (cannot be combined with -f)"
@@ -42,9 +44,22 @@ display_help() {
     echo "  -v            Use vimdiff"
     echo "  -m value      Git diff modifiers passed directly to \'--diff-filter\'. Most notable A-Added and M-Modified. For more info goto \'man git diff\' "
     echo "  -p value      Path to file to be compared (style dependent on choice -d or -v (default -d). If both are chosen, -d will be first."
-    echo "  -b value      (Mandatory) Base repository"
-    echo "  -c value      Compare againts the base repository (if not suplied the script will perfrom tests for all folders)"
     echo "  -h            Display this help and exit"
+    echo
+    echo "Example usage:"
+    echo "    - To get simple overview of changes between 'base_repo' and 'compared_repo' use"
+    echo "        $0 -b base_repo -c compared_repo"
+    echo "    - To get simple overview of changes between 'base_repo' and all repositories in current folder simply ommit -c"
+    echo "        $0 -b base_repo"
+    echo "    - To get the top level summary, i.e. the number of changed files and number of changed lines use"
+    echo "        $0 -b base_repo -c compared_repo -o > overview.txt"
+    echo "    - To get the list of modified files with a path relative to the repo base use"
+    echo "        $0 -b base_repo -c compared_repo -f -s > list.txt"
+    echo "    - To get text-based graphical representation of the list.txt file use"
+    echo "        $0 -b base_repo -c compared_repo -t > tree.txt"
+    echo "    - To get the summary of all changed lines use"
+    echo "        $0 -b base_repo -c compared_repo -d > diff.txt"
+    echo
     echo "Note you might want to call \' git config --global core.autocrlf true\'"
 }
 
