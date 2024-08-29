@@ -154,67 +154,50 @@ for compare in $directories; do
         if [ $default_report -eq 1 ]; then
             echo "Overview for $compare"
 
-            # echo "New files:"
-            # git --work-tree=../$base diff --stat --diff-filter=A  | tail -n 1 2> /dev/null # list of changed files
-            # #if empty output then echo "None"
-
-            # echo "Modified files:"
-            # git --work-tree=../$base diff --stat --diff-filter=M  | tail -n 1 2> /dev/null # list of changed files
-            # #if empty output then echo "None"
-
-            # echo "Deleted files:"
-            # git --work-tree=../$base diff --stat --diff-filter=D  | tail -n 1 2> /dev/null # list of changed files
-            # #if empty output then echo "None"
-
-            # echo "Total:"
-            # git --work-tree=../$base diff --stat | tail -n 1 2> /dev/null # list of changed files
-            # #if empty output then echo "None"
-
             # New files
-            new_files=$(git --work-tree=../$base diff --stat --diff-filter=A | tail -n 1 2> /dev/null)
+            new_files=$(git --work-tree=../$base diff -w --stat --diff-filter=A | tail -n 1 2> /dev/null)
             echo -n "New files: "
             [ -z "$new_files" ] && echo "None" || echo "$new_files"
 
             # Modified files
-            modified_files=$(git --work-tree=../$base diff --stat --diff-filter=M | tail -n 1 2> /dev/null)
+            modified_files=$(git --work-tree=../$base diff -w --stat --diff-filter=M | tail -n 1 2> /dev/null)
             echo -n "Modified files: "
             [ -z "$modified_files" ] && echo "None" || echo "$modified_files"
 
             # Deleted files
-            deleted_files=$(git --work-tree=../$base diff --stat --diff-filter=D | tail -n 1 2> /dev/null)
+            deleted_files=$(git --work-tree=../$base diff -w --stat --diff-filter=D | tail -n 1 2> /dev/null)
             echo -n "Deleted files: "
             [ -z "$deleted_files" ] && echo "None" || echo "$deleted_files"
 
             # Total
-            total_files=$(git --work-tree=../$base diff --stat | tail -n 1 2> /dev/null)
+            total_files=$(git --work-tree=../$base diff -w --stat | tail -n 1 2> /dev/null)
             echo -n "Total: "
             [ -z "$total_files" ] && echo "None" || echo "$total_files"
         fi
 
-
         if [ $o_flag -eq 1 ]; then
             debug_echo "overview"
-            git --work-tree=../$base diff --stat $diff_modifier $relative_modifier | tail -n 1 2> /dev/null # list of changed files
+            git --work-tree=../$base diff -w --stat $diff_modifier $relative_modifier | tail -n 1 2> /dev/null # list of changed files
         fi
 
         if [ $f_flag -eq 1 ]; then
             debug_echo "file list"
             if [ $s_flag -eq 0 ]; then
                 #debug_echo " - name only"
-                git --work-tree=../$base diff --name-only $diff_modifier $relative_modifier 2> /dev/null # list of changed files
+                git --work-tree=../$base diff -w --name-only $diff_modifier $relative_modifier 2> /dev/null # list of changed files
             else
                 #debug_echo " - stat"
                 #debug_echo "git --work-tree=../$base diff --stat $diff_modifier $relative_modifier 2> /dev/null" # list of changed files with stats
-                git --work-tree=../$base diff --stat $diff_modifier $relative_modifier 2> /dev/null # list of changed files with stats
+                git --work-tree=../$base diff -w --stat $diff_modifier $relative_modifier 2> /dev/null # list of changed files with stats
             fi
         fi
 
         if [ $t_flag -eq 1 ]; then
             #debug_echo "tree-style file list"
             if [ $s_flag -eq 0 ]; then
-                git --work-tree=../$base diff --name-only $diff_modifier $relative_modifier 2> /dev/null | grep -v "warning:" | tree --fromfile
+                git --work-tree=../$base diff -w --name-only $diff_modifier $relative_modifier 2> /dev/null | grep -v "warning:" | tree --fromfile
             else
-                git --work-tree=../$base diff --stat $diff_modifier 2> /dev/null | grep -v "warning:" | tree --fromfile
+                git --work-tree=../$base diff -w --stat $diff_modifier 2> /dev/null | grep -v "warning:" | tree --fromfile
             fi
         fi
 
@@ -229,9 +212,9 @@ for compare in $directories; do
                 fi
             else
                 if [ ! -z $relative ]; then
-                    git diff ../$base/$path $relative/$path
+                    git diff -w ../$base/$path $relative/$path
                 else
-                    git diff ../$base/$path $path
+                    git diff -w ../$base/$path $path
                 fi
             fi
         elif [ $v_flag -eq 1 ] || [ $d_flag -eq 1 ]; then
@@ -246,7 +229,7 @@ for compare in $directories; do
                 #git --work-tree=../$base diff $diff_modifier $relative_modifier #2> /dev/null
 
                 debug_echo "git diff --no-index ../$base ./$realtive"
-                git diff --no-index ../$base ./$realtive
+                git diff -w --no-index ../$base ./$realtive
             fi
 
             if [ $v_flag -eq 1 ]; then
