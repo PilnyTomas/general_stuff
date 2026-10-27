@@ -16,6 +16,7 @@ my_grep_search.sh - shortcut for searching text in files
 - ocd.sh - script for setting up OCD and GDB for ESP (if you don't know what those shortcuts mean, it probably looks funny)
 - pre-commit - arduino-esp32 checker which compiles changed examples and libraries for all chips and prevents commit if errors occur.
 - serial.sh - simply open serial monitor for ESP32 as it would an Arduinio IDE - but in terminal, so you can have more of them.
+- soft_rm_setup.sh - installs a standalone `srm` soft-delete command; system `rm` interception is an explicit second step.
 - switch.sh - my developer script which is changing arduino fork that will be actually used for compilation in Arduino IDE
 
 
