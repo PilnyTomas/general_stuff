@@ -85,6 +85,28 @@ backup() {
 # ---- Helper: is /usr/bin/rm already diverted by dpkg? -----------------------
 is_diverted() { dpkg-divert --list "$RM_BIN" | grep -q .; }
 
+# ---- Add soft-deleted names to this user's global Git excludes ---------------
+configure_git_excludes() {
+  local git_user git_home excludes_file
+  git_user=${SUDO_USER:-$(id -un)}
+  git_home=$(getent passwd "$git_user" | cut -d: -f6)
+  [ -n "$git_home" ] || { echo "Cannot determine home directory for $git_user." >&2; return 1; }
+  excludes_file=$(sudo -u "$git_user" env HOME="$git_home" git config --global --path core.excludesFile 2>/dev/null || true)
+  [ -n "$excludes_file" ] || excludes_file="$git_home/.gitignore_global"
+  case "$excludes_file" in
+    /*) ;;
+    *) excludes_file="$git_home/$excludes_file" ;;
+  esac
+  case "$excludes_file" in
+    '~'*) excludes_file="$git_home/${excludes_file#\~}" ;;
+  esac
+  sudo -u "$git_user" env HOME="$git_home" mkdir -p -- "${excludes_file%/*}"
+  sudo -u "$git_user" env HOME="$git_home" touch -- "$excludes_file"
+  sudo -u "$git_user" env HOME="$git_home" git config --global core.excludesFile "$excludes_file"
+  sudo -u "$git_user" env HOME="$git_home" bash -c 'grep -qxF "*.delete" "$1" 2>/dev/null || printf "%s\n" "*.delete" >>"$1"' _ "$excludes_file"
+  echo "Git global excludes file: $excludes_file"
+}
+
 # =============================================================================
 # install_wrapper: writes the wrapper that becomes /usr/bin/rm
 # The heredoc delimiter is quoted ('WRAPPER_EOF') so nothing inside is expanded
@@ -281,6 +303,7 @@ PURGE_EOF
 do_install() {
   tmp_w=$(mktemp); tmp_p=$(mktemp)          # scratch files for the new scripts
   write_wrapper "$tmp_w"; write_purge "$tmp_p"
+  configure_git_excludes
 
   # Create logs and lock only if missing. 622 = everyone can append (needed so
   # any user's rm can log), only root can read. Existing logs are never touched.
